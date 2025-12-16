@@ -87,6 +87,16 @@ const getSchemas = (store) => {
             relations: [
                 { name: "related_service_tech", label: "Aplica al Servicio", target: "services", multiple: true }
             ]
+        },
+        feature_requests: {
+            label: "Solicitud de Mejoras",
+            icon: "💡",
+            fields: [
+                { name: "description", label: "Descripción de la Solicitud", type: "textarea", required: true },
+                { name: "type", label: "Tipo", type: "select", options: ["Mejora", "Nueva Funcionalidad", "Bug"], required: true },
+                { name: "email", label: "Correo Electrónico", type: "text", placeholder: "opcional@ejemplo.com" },
+                { name: "status", label: "Estado", type: "select", options: ["Pendiente", "En Revisión", "Completado"], required: true }
+            ]
         }
     };
 };
@@ -104,6 +114,7 @@ class ITSMStore {
             components: [],
             requests: [],
             technical: [],
+            feature_requests: [],
             settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
         };
     }
@@ -676,7 +687,11 @@ class ITSMApp {
     }
 
     refresh() {
-        if (this.currentView !== 'settings') {
+        if (this.currentView === 'settings') return;
+
+        if (this.currentView === 'feature_requests') {
+            this.ui.renderTable(this.currentView);
+        } else {
             this.ui.renderGrid(this.currentView, document.getElementById('global-search').value);
         }
     }
