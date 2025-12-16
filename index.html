@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITSM Service Catalog Manager</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">ITSM</div>
+                <h1>Service Catalog</h1>
+            </div>
+
+            <nav class="main-nav">
+                <button class="nav-btn active" data-view="services">
+                    <span class="icon">💼</span> Vista Negocio
+                </button>
+                <button class="nav-btn" data-view="components">
+                    <span class="icon">🧩</span> Componentes (CIs)
+                </button>
+                <button class="nav-btn" data-view="requests">
+                    <span class="icon">📋</span> Catálogo Peticiones
+                </button>
+                <button class="nav-btn" data-view="technical">
+                    <span class="icon">🔧</span> Vista Técnica
+                </button>
+                <div style="height: 1px; background: var(--border-color); margin: 0.5rem 0;"></div>
+                <button class="nav-btn" data-view="settings">
+                    <span class="icon">⚙️</span> Configuración
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="data-controls">
+                    <button id="btn-export" class="secondary-btn small-btn">Exportar JSON</button>
+                    <label for="file-import" class="secondary-btn small-btn">Importar JSON</label>
+                    <input type="file" id="file-import" accept=".json" hidden>
+                    <button id="btn-reset" class="danger-btn small-btn">Reset</button>
+                </div>
+                <div class="app-version">v1.0.0 LocalStorage</div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2 id="page-title">Vista de Negocio</h2>
+                <div class="actions">
+                    <div class="search-box">
+                        <input type="text" id="global-search" placeholder="Buscar registros...">
+                    </div>
+                    <button id="btn-create" class="primary-btn">+ Nuevo Registro</button>
+                </div>
+            </header>
+
+            <!-- Dynamic Content Container -->
+            <div id="view-container" class="content-wrapper">
+                <!-- Content injected by JS -->
+                <div class="empty-state">
+                    <p>Cargando datos...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Universal Modal for Create/Edit -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Crear Nuevo</h3>
+                <button id="btn-close-modal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="dynamic-form">
+                    <!-- Form fields injected by JS -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="secondary-btn" id="btn-cancel-modal">Cancelar</button>
+                <button type="submit" form="dynamic-form" class="primary-btn">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
