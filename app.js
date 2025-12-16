@@ -38,7 +38,7 @@ const getSchemas = (store) => {
                 { name: "customers", label: "Clientes/Usuarios", type: "text" }
             ],
             relations: [
-                { name: "linked_cis", label: "CIs Relacionados", target: "components", multiple: true },
+                { name: "linked_cis", label: "CIs Relacionados", target: "components", multiple: true, reverseField: "parent_service" },
                 { name: "linked_requests", label: "Peticiones Asociadas", target: "requests", multiple: true }
             ]
         },
@@ -54,7 +54,7 @@ const getSchemas = (store) => {
                 { name: "version", label: "Versión/Modelo", type: "text" }
             ],
             relations: [
-                { name: "parent_service", label: "Servicio Padre", target: "services", multiple: false }
+                { name: "parent_service", label: "Servicios Relacionados", target: "services", multiple: true, reverseField: "linked_cis" }
             ]
         },
         requests: {
@@ -133,6 +133,17 @@ class ITSMStore {
         if (this.data.settings[key]) {
             this.data.settings[key] = list;
             this.save();
+        }
+    }
+
+    updateSettingItem(key, oldVal, newVal) {
+        if (this.data.settings[key]) {
+            const list = this.data.settings[key];
+            const index = list.indexOf(oldVal);
+            if (index !== -1) {
+                list[index] = newVal;
+                this.save();
+            }
         }
     }
 
@@ -230,7 +241,10 @@ class UI {
             const listHtml = settings[key].map((item, idx) =>
                 `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #334155;">
                     <span>${item}</span>
-                    <button class="small-btn danger-btn remove-setting" data-key="${key}" data-idx="${idx}" style="padding:2px 6px;">×</button>
+                    <div>
+                        <button class="small-btn edit-setting" data-key="${key}" data-val="${item}" style="padding:2px 6px; margin-right:5px;">✎</button>
+                        <button class="small-btn danger-btn remove-setting" data-key="${key}" data-idx="${idx}" style="padding:2px 6px;">×</button>
+                    </div>
                  </div>`
             ).join('');
 
@@ -262,6 +276,17 @@ class UI {
                 btn.addEventListener('click', (e) => {
                     const idx = parseInt(e.target.dataset.idx);
                     this.events.emit('setting-remove', { key, idx });
+                });
+            });
+
+            // Bind Edit Events
+            card.querySelectorAll('.edit-setting').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const oldVal = e.target.dataset.val;
+                    const newVal = prompt(`Editar valor para ${mapLabels[key] || key}:`, oldVal);
+                    if (newVal && newVal !== oldVal) {
+                        this.events.emit('setting-update', { key, oldVal, newVal });
+                    }
                 });
             });
 
@@ -588,6 +613,12 @@ class ITSMApp {
             this.ui.renderSettings();
         });
 
+        this.events.on('setting-update', ({ key, oldVal, newVal }) => {
+            this.store.updateSettingItem(key, oldVal, newVal);
+            this.ui.renderSettings();
+            this.ui.showToast('Opción actualizada', 'success');
+        });
+
         document.getElementById('btn-reset').addEventListener('click', () => {
             if (confirm('ATENCIÓN: Esto borrará todos los datos. ¿Estás seguro?')) {
                 localStorage.removeItem(this.store.STORAGE_KEY);
@@ -668,17 +699,75 @@ class ITSMApp {
         }
 
         const id = form.dataset.itemId;
+        let oldItem = {};
 
         if (id) {
+            oldItem = JSON.parse(JSON.stringify(this.store.get(this.currentView, id)));
             this.store.update(this.currentView, id, data);
             this.ui.showToast('Registro actualizado', 'success');
         } else {
-            this.store.add(this.currentView, data);
+            const newItem = this.store.add(this.currentView, data);
+            data.id = newItem.id;
             this.ui.showToast('Registro creado', 'success');
         }
 
         this.ui.closeModal();
+
+        // Handle Bidirectional Synchronization
+        const subjectId = id || data.id;
+        this.syncRelations(this.currentView, subjectId, oldItem, data);
+
         this.refresh();
+    }
+
+    syncRelations(collection, subjectId, oldData, newData) {
+        const schemas = getSchemas(this.store);
+        const schema = schemas[collection];
+        if (!schema.relations) return;
+
+        schema.relations.forEach(rel => {
+            if (!rel.reverseField) return;
+
+            const targetCollection = rel.target;
+            const reverseField = rel.reverseField;
+
+            // Helper to ensure array
+            const getIds = (val) => {
+                if (!val) return [];
+                return Array.isArray(val) ? val : [val];
+            };
+
+            const oldIds = getIds(oldData[rel.name]);
+            const newIds = getIds(newData[rel.name]);
+
+            // Calculate Added and Removed
+            const addedIds = newIds.filter(x => !oldIds.includes(x));
+            const removedIds = oldIds.filter(x => !newIds.includes(x));
+
+            // Handle Added: Add subjectId to their reverseField
+            addedIds.forEach(targetId => {
+                const targetItem = this.store.get(targetCollection, targetId);
+                if (targetItem) {
+                    const currentReverseIds = getIds(targetItem[reverseField]);
+                    if (!currentReverseIds.includes(subjectId)) {
+                        currentReverseIds.push(subjectId);
+                        this.store.update(targetCollection, targetId, { [reverseField]: currentReverseIds });
+                    }
+                }
+            });
+
+            // Handle Removed: Remove subjectId from their reverseField
+            removedIds.forEach(targetId => {
+                const targetItem = this.store.get(targetCollection, targetId);
+                if (targetItem) {
+                    let currentReverseIds = getIds(targetItem[reverseField]);
+                    if (currentReverseIds.includes(subjectId)) {
+                        currentReverseIds = currentReverseIds.filter(x => x !== subjectId);
+                        this.store.update(targetCollection, targetId, { [reverseField]: currentReverseIds });
+                    }
+                }
+            });
+        });
     }
 }
 
