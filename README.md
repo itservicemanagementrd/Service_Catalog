@@ -2,6 +2,9 @@
 
 A serverless, browser-based IT Service Management tool designed to manage IT services, CIs, requests, and support information using ITIL best practices.
 
+[![Build and deploy](https://github.com/itservicemanagementrd/Service_Catalog/actions/workflows/deploy.yml/badge.svg)](https://github.com/itservicemanagementrd/Service_Catalog/actions/workflows/deploy.yml) [![GitHub Pages](https://img.shields.io/badge/site-github--pages-blue)](https://itservicemanagementrd.github.io/Service_Catalog/)
+
+
 ![Application Preview](https://via.placeholder.com/800x400?text=ITSM+Service+Catalog+Preview)
 
 ## Features
